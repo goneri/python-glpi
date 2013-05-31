@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 #-*- coding:utf-8 -*-
 
-import urllib, urllib2
-import json
+#import urllib, urllib2
+import xmlrpclib
+#import simplejson as json
 import pprint
 import sys, os, warnings
 import getpass
-
 
 class RESTClient:
     """.. note:: If any boolean arguments are defined, they're \
@@ -38,21 +38,29 @@ class RESTClient:
         :param login_password: your GLPI password
         """
 
-        self.url = 'http://' + host + self.BASEURL + '/plugins/webservices/rest.php?'
+#        self.url = 'http://' + host + self.BASEURL + '/plugins/webservices/rest.php?'
+        self.url = 'http://' + host + self.BASEURL + '/plugins/webservices/xmlrpc.php'
 
         self.login_name = None
         self.login_password = None
         if login_name: self.login_name = login_name
         if login_password: self.login_password = login_password
 
+        self.server = xmlrpclib.Server(self.url)
         if self.login_name != None and self.login_password != None:
+#            params = {'login_name':login_name,
+#                      'login_password':login_password}
+#                      'login_password':login_password,
+#                      'method':'glpi.doLogin'}
             params = {'login_name':login_name,
-                      'login_password':login_password,
-                      'method':'glpi.doLogin'}
-            request = urllib2.Request(self.url + urllib.urlencode(params))
-            response = urllib2.urlopen(request).read()
+                      'login_password':login_password}
+
+#            request = urllib2.Request(self.url + urllib.urlencode(params))
+#            response = urllib2.urlopen(request).read()
+            response = self.server.glpi.doLogin(params)
             try:
-                session_id = json.loads(response)['session']
+#                session_id = json.loads(response)['session']
+                session_id = response['session']
                 self.session = session_id
                 return True
             except:
@@ -73,11 +81,14 @@ class RESTClient:
         :type _help: bool
         :param _help: get usage information
         """
-        params = {'method':'glpi.status'}
+#        params = {'method':'glpi.status'}
         if _help: params['help'] = _help
-        request = urllib2.Request(self.url + urllib.urlencode(params))
-        response = urllib2.urlopen(request).read()
-        return json.loads(response)
+
+#        request = urllib2.Request(self.url + urllib.urlencode(params))
+#        response = urllib2.urlopen(request).read()
+#        return json.loads(response)
+        response = self.server.glpi.status()
+        return response
 
     def test(self,_help=None):
         """
@@ -88,12 +99,16 @@ class RESTClient:
         :type _help: boolean
         :param _help: get usage information
         """
-        params = {'method':'glpi.test'}
+#        params = {'method':'glpi.test'}
         if _help: params['help'] = _help
-        request = urllib2.Request(self.url + urllib.urlencode(params))
-        response = urllib2.urlopen(request).read()
-        return json.loads(response)
 
+#        request = urllib2.Request(self.url + urllib.urlencode(params))
+#        response = urllib2.urlopen(request).read()
+#        return json.loads(response)
+        response = self.server.glpi.test()
+        return response
+
+# listAllMethods METHOD NOT KNOWN ???
     def list_all_methods(self,_help=None):
         """
         Returns a list of all methods allowed to the current client
@@ -101,11 +116,14 @@ class RESTClient:
         :type _help: boolean
         :param _help: get usage information
         """
-        params = {'method':'glpi.listAllMethods'}
+#        params = {'method':'glpi.listAllMethods'}
         if _help: params['help'] = _help
-        request = urllib2.Request(self.url + urllib.urlencode(params))
-        response = urllib2.urlopen(request).read()
-        return json.loads(response)
+
+#        request = urllib2.Request(self.url + urllib.urlencode(params))
+#        response = urllib2.urlopen(request).read()
+#        return json.loads(response)
+        response = self.server.listAllMethods()
+        return response
 
     def list_entities(self,count=None,_help=None):
         """
@@ -116,8 +134,10 @@ class RESTClient:
         :type _help: boolean
         :param _help: get usage information
         """
-        params = {'method':'glpi.listAllMethods'}
+#        params = {'method':'glpi.listAllMethods'}
+        params = {}
         if self.session: params['session'] = self.session
+
         if count:
             if len(count) < 2:
                 raise Exception("List needs to include a start and limit integer")
@@ -125,9 +145,12 @@ class RESTClient:
                 params['start'] = count[0]
                 params['limit'] = count[1]
         if _help: params['help'] = _help
-        request = urllib2.Request(self.url + urllib.urlencode(params))
-        response = urllib2.urlopen(request).read()
-        return json.loads(response)
+
+#        request = urllib2.Request(self.url + urllib.urlencode(params))
+#        response = urllib2.urlopen(request).read()
+#        return json.loads(response)
+        response = self.server.listEntities(params)
+        return response
 
     def list_know_base_items(self, faq=None, category=None,
                              contains=None, count=None, _help=None):
@@ -148,8 +171,10 @@ class RESTClient:
         :param count: iterable containing start and limit integers
         :param _help: get usage information
         """
-        params = {'method':'glpi.listKnowBaseItems'}
+#        params = {'method':'glpi.listKnowBaseItems'}
+        params = {}
         if self.session: params['session'] = self.session
+
         if faq: params['faq'] = faq
         if category: params['category'] = category
         if contains: params['contains'] = contains
@@ -160,43 +185,80 @@ class RESTClient:
                 params['start'] = count[0]
                 params['limit'] = count[1]
         if _help: params['help'] = _help
-        request = urllib2.Request(self.url + urllib.urlencode(params))
-        response = urllib2.urlopen(request).read()
-        return json.loads(response)
+
+#        request = urllib2.Request(self.url + urllib.urlencode(params))
+#        response = urllib2.urlopen(request).read()
+#        return json.loads(response)
+        response = self.server.glpi.listKnowBaseItems()
+        return response
+
+# TODO :
+#    def get_know_base_item
+
+# TODO :
+#    def get_document
 
     """
     User context methods
     """
 
+    def disconnect(self):
+        """
+        Return a hashtable with message = Bye
+        """
+        params = {'session':self.session}
+
+        response = self.server.glpi.doLogout(params)
+        return response
+
+
     def get_my_info(self):
         """
-        Returns JSON serialized information about the currently logged
-        in user.
+#        Returns JSON serialized information about the currently logged in user.
+        Return a hashtable about the currently logged in user.
         """
-        params = {'method':'glpi.getMyInfo',
-                  'session':self.session}
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+#        params = {'method':'glpi.getMyInfo',
+#                  'session':self.session}
+        params = {'session':self.session}
+
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.getMyInfo(params)
+        return response
 
     def list_my_profiles(self):
         """
-        Returns JSON serialized profile information about the
-        currently logged in user.
+#        Returns JSON serialized profile information about the currently logged in user.
+        Return a array of hashtable about the profile of currently logged in user.
         """
-        params = {'method':'glpi.listMyProfiles',
-                  'session':self.session}
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+#        params = {'method':'glpi.listMyProfiles',
+#                  'session':self.session}
+        params = {'session':self.session}
+
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.listMyProfiles(params)
+        return response
+
+# TODO :
+#    def set_my_profile
 
     def list_my_entities(self):
         """
-        Returns JSON serialized informations about the entities of the
-        currently logged in user.
+#        Returns JSON serialized informations about the entities of the currently logged in user.
+        Return a hashtable if succeed of new selected profile of the currently logged in user.
         """
-        params = {'method':'glpi.listMyEntities',
-                  'session':self.session}
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+#        params = {'method':'glpi.listMyEntities',
+#                  'session':self.session}
+        params = {'session':self.session}
+
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.listMyEntities(params)
+        return response
+
+# TODO :
+#    def set_my_entity
 
     """
     Information retrieval methods
@@ -204,7 +266,8 @@ class RESTClient:
 
     def get_ticket(self,ticket_id,id2name=None,_help=None):
         """
-        Returns a JSON serialized ticket
+#        Returns a JSON serialized ticket
+        Return a hashtable
 
         :type ticket_id: integer
         :type id2name: string
@@ -213,21 +276,26 @@ class RESTClient:
         :param id2name: option to enable id to name translation of dropdown fields
         :param _help: return JSON serialized help about the API call
         """
-        params = {'method':'glpi.getTicket',
-                  'ticket':ticket_id,
-                  'session':self.session}
+#        params = {'method':'glpi.getTicket',
+#                  'ticket':ticket_id,
+#                  'session':self.session}
+        params = {'session':self.session,
+                  'ticket':ticket_id}
+
         if id2name: params['id2name'] = str(id2name)
         if _help: params['help'] = help
 
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.getTicket(params)
+        return response
 
     def get_object(self,itemtype,_id,show_label=None,
                      show_name=None,_help=None):
         """
         Returns an object from the GLPI server. itemtype can take `one of the following <https://forge.indepnet.net/embedded/glpi/annotated.html>`_
         
-        :type itemtype: integer
+        :type itemtype: string
         :type _id: integer
         :type show_label: boolean
         :type show_name: boolean
@@ -239,60 +307,71 @@ class RESTClient:
         :param _help: get usage information
         
         """
-        params = {'method':'glpi.getObject',
-                  'session':self.session}
+#        params = {'method':'glpi.getObject',
+#                  'session':self.session}
+        params = {'session':self.session}
 
         if itemtype: params['itemtype'] = itemtype
         if _id: params['id'] = _id
         if show_label: params['show_label'] = show_label
         if show_name: params['show_name'] = show_name
         if _help: params['help'] = _help
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+        print (params)
 
-    def get_computer(self,computer_id,**kwargs):
-        """
-        Returns a JSON serialized computer object from the GLPI server
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.getObject(params)
+        return response
 
-        :type computer_id: integer
-        :type id2name: boolean
-        :type infocoms: boolean
-        :type contracts: boolean
-        :type networkports: boolean
-        :type help: boolean
-        :param computer_id: computerID
-        :param id2name: option to enable id to name translation of dropdown fields
-        :param infocoms: return infocoms associated with the computer
-        :param contracts: return contracts associated with the network equipment
-        :param networkports: return information about computer's network ports
-        :param help: get usage information
-        """
-        params = {'method':'glpi.getComputer',
-                  'session': self.session,
-                  'computer':computer_id}
+# DEPRECATED ! SEE GETOBJECT
+#    def get_computer(self,computer_id,**kwargs):
+#        """
+#        Returns a JSON serialized computer object from the GLPI server
+#
+#        :type computer_id: integer
+#        :type id2name: boolean
+#        :type infocoms: boolean
+#        :type contracts: boolean
+#        :type networkports: boolean
+#        :type help: boolean
+#        :param computer_id: computerID
+#        :param id2name: option to enable id to name translation of dropdown fields
+#        :param infocoms: return infocoms associated with the computer
+#        :param contracts: return contracts associated with the network equipment
+#        :param networkports: return information about computer's network ports
+#        :param help: get usage information
+#        """
+#        params = {'method':'glpi.getComputer',
+#                  'session': self.session,
+#                  'computer':computer_id}
+#
+#        ###################### Tue Oct  9 17:22:34 EDT 2012 ##############
+#        # I realized today that I don't like to type very much, using
+#        # kwargs is cleaner, if anyone has a major issue with that,
+#        # speak now or forever hold your peace. -CDG
+#        ################ old stuff here ##################################
+#        # print self.__request__(params)
+#        # if id2name: params['id2name'] = id2name
+#        # if infocoms: params['infocoms'] = infocoms
+#        # if contracts: params['contracts'] = contracts
+#        # if networkports: params['networkports'] = networkports
+#        # if _help: params['help'] = _help
+#
+#        for arg in kwargs:
+#            params[arg]  = kwargs[arg]            
+#        print (params)
+#
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
 
-        ###################### Tue Oct  9 17:22:34 EDT 2012 ##############
-        # I realized today that I don't like to type very much, using
-        # kwargs is cleaner, if anyone has a major issue with that,
-        # speak now or forever hold your peace. -CDG
-        ################ old stuff here ##################################
-        # print self.__request__(params)
-        # if id2name: params['id2name'] = id2name
-        # if infocoms: params['infocoms'] = infocoms
-        # if contracts: params['contracts'] = contracts
-        # if networkports: params['networkports'] = networkports
-        # if _help: params['help'] = _help
-
-        for arg in kwargs:
-            params[arg]  = kwargs[arg]            
-
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+# DEPRECATED ! SEE GETITEMINFOCOMS
+# TODO : replace by
+#    def get_item_infocoms
 
     def get_computer_infocoms(self,computer_id,id2name=None,_help=None):
         """
-        Return a JSON serialized list of computer infocoms from the
-        GLPI server.
+#        Return a JSON serialized list of computer infocoms from the GLPI server.
+        Return a hashtable
 
         :type computer_id: integer
         :type id2name: boolean
@@ -309,6 +388,10 @@ class RESTClient:
 
         response = urllib2.urlopen(self.__request__(params))
         return json.loads(response.read())
+
+# DEPRECATED ! SEE GETITEMCONTRACTS
+# TODO : replace by
+#    def get_item_contracts
 
     def get_computer_contracts(self,computer_id,id2name=None,_help=None):
         """
@@ -331,80 +414,83 @@ class RESTClient:
         response = urllib2.urlopen(self.__request__(params))
         return json.loads(response.read())
 
-    def get_network_equipment(self,network_equipment_id,id2name=None,infocoms=None,
-                              contracts=None,networkports=None,_help=None):
-        """
-        Return a JSON serialized network object from the GLPI
-        server.
+# DEPRECATED ! SEE GETOBJECT
+#    def get_network_equipment(self,network_equipment_id,id2name=None,infocoms=None,
+#                              contracts=None,networkports=None,_help=None):
+#        """
+#        Return a JSON serialized network object from the GLPI
+#        server.
+#
+#        :type network_equipment_id: integer
+#        :type id2name: boolean
+#        :type infocoms: boolean
+#        :type contracts: boolean
+#        :type networkports: boolean
+#        :type _help: boolean
+#        :param network_equipment_id: ID of the network equipment
+#        :param id2name: associate labels with IDs and return with the rest of the JSON result
+#        :param infocoms: return infocoms associated with the network equipment
+#        :param contracts: return contracts associated with the network equipment
+#        :param networkports: return information about the equipments network ports
+#        :param _help: return JSON serialized information about this API call
+#        """
+#        params = {'method':'glpi.getNetworkEquipment',
+#                  'session':self.session,
+#                  'id':network_equipment_id}
+#
+#        if id2name: params['id2name'] = id2name
+#        if infocoms: params['infocoms'] = infocoms
+#        if contracts: params['contracts'] = contracts
+#        if networkports: params['networkports'] = networkports
+#        if _help: params['help'] = _help
+#
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
 
-        :type network_equipment_id: integer
-        :type id2name: boolean
-        :type infocoms: boolean
-        :type contracts: boolean
-        :type networkports: boolean
-        :type _help: boolean
-        :param network_equipment_id: ID of the network equipment
-        :param id2name: associate labels with IDs and return with the rest of the JSON result
-        :param infocoms: return infocoms associated with the network equipment
-        :param contracts: return contracts associated with the network equipment
-        :param networkports: return information about the equipments network ports
-        :param _help: return JSON serialized information about this API call
-        """
-        params = {'method':'glpi.getNetworkEquipment',
-                  'session':self.session,
-                  'id':network_equipment_id}
+# DEPRECATED ! SEE GETITEMINFOCOMS
+#    def get_infocoms(self,_id,itemtype,id2name=None,_help=None):
+#        """
+#        Return a JSON serialized list of computer's financial
+#        information from the GLPI server.
+#
+#        :type _id: integer
+#        :type itemtype: integer
+#        :type id2name: boolean
+#        :type _help: boolean
+#        :param _id: object id
+#        :param itemtype: the object type
+#        :param id2name: option to enable id to name translation of dropdown fields
+#        :param _help: Get help from the server
+#        """
+#        params = {'method':'glpi.getInfoComs',
+#                  'session':self.session,
+#                  'id':infocoms_id,
+#                  'itemtype':itemtype}
+#        if id2name: params['id2name'] = id2name
+#        if _help: params['help'] = _help
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
 
-        if id2name: params['id2name'] = id2name
-        if infocoms: params['infocoms'] = infocoms
-        if contracts: params['contracts'] = contracts
-        if networkports: params['networkports'] = networkports
-        if _help: params['help'] = _help
-
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
-
-    def get_infocoms(self,_id,itemtype,id2name=None,_help=None):
-        """
-        Return a JSON serialized list of computer's financial
-        information from the GLPI server.
-
-        :type _id: integer
-        :type itemtype: integer
-        :type id2name: boolean
-        :type _help: boolean
-        :param _id: object id
-        :param itemtype: the object type
-        :param id2name: option to enable id to name translation of dropdown fields
-        :param _help: Get help from the server
-        """
-        params = {'method':'glpi.getInfoComs',
-                  'session':self.session,
-                  'id':infocoms_id,
-                  'itemtype':itemtype}
-        if id2name: params['id2name'] = id2name
-        if _help: params['help'] = _help
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
-
-    def get_contracts(self,_id,id2name=None,_help=None):
-        """
-        Return a JSON serialized list of contracts from the GLPI server.
-
-        :type _id: integer
-        :type id2name: boolean
-        :type _help: boolean
-        :param _id: computer id
-        :param id2name: option to enable id to name translation of dropdown fields
-        :param _help: get help from server
-        """
-        params = {'method':'glpi.getContracts',
-                  'session':self.session,
-                  'id':_id}
-        if id2name: params['id2name'] = id2name
-        if _help: params['help'] = _help
-
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+# DEPRECATED ! SEE GETITEMCONTRACTS
+#    def get_contracts(self,_id,id2name=None,_help=None):
+#        """
+#        Return a JSON serialized list of contracts from the GLPI server.
+#
+#        :type _id: integer
+#        :type id2name: boolean
+#        :type _help: boolean
+#        :param _id: computer id
+#        :param id2name: option to enable id to name translation of dropdown fields
+#        :param _help: get help from server
+#        """
+#        params = {'method':'glpi.getContracts',
+#                  'session':self.session,
+#                  'id':_id}
+#        if id2name: params['id2name'] = id2name
+#        if _help: params['help'] = _help
+#
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
 
     def get_network_ports(self,_id,itemtype,id2name=None,_help=None):
         """
@@ -426,39 +512,44 @@ class RESTClient:
         :param _help: get help from server about this api call
         """
 
-        params = {'method':'glpi.getNetworkports',
-                  'session':self.session,
+#        params = {'method':'glpi.getNetworkports',
+#                  'session':self.session,
+#                  'id':_id,
+#                  'itemtype':itemtype}
+        params = {'session':self.session,
                   'id':_id,
                   'itemtype':itemtype}
 
         if id2name: params['id2name'] = id2name
         if _help: params['help'] = _help
 
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.getNetworkports(params)
+        return response
 
-
-    def list_computers(self,count=None,_help=None):
-        """
-        Return a JSON serialized list of computers from the GLPI
-        server.
-
-        :type count: list
-        :type _help: boolean
-        :param count: iterable containing start and limit integers
-        :param _help: get help from server about this API call
-        """
-        params = {'method':'glpi.listComputers',
-                  'session':self.session}
-        if count:
-            if len(count) < 2:
-                raise Exception("List needs to include a start and limit integer")
-            if len(count) == 2:
-                params['start'] = count[0]
-                params['limit'] = count[1]
-        if _help: params['help'] = _help
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+# DEPRECATED ! SEE LISTOBJECTS
+#    def list_computers(self,count=None,_help=None):
+#        """
+#        Return a JSON serialized list of computers from the GLPI
+#        server.
+#
+#        :type count: list
+#        :type _help: boolean
+#        :param count: iterable containing start and limit integers
+#        :param _help: get help from server about this API call
+#        """
+#        params = {'method':'glpi.listComputers',
+#                  'session':self.session}
+#        if count:
+#            if len(count) < 2:
+#                raise Exception("List needs to include a start and limit integer")
+#            if len(count) == 2:
+#                params['start'] = count[0]
+#                params['limit'] = count[1]
+#        if _help: params['help'] = _help
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
 
     def list_dropdown_values(self,dropdown,_id=None,parent=None,name=None,
                              helpdesk=None,criteria=None,count=None,_help=None):
@@ -490,9 +581,12 @@ class RESTClient:
         :param count: iterable containing start and limit integers
         :param _help: get usage information
         """
-        params = {'method':'glpi.listDropdownValues',
-                  'session':self.session,
+#        params = {'method':'glpi.listDropdownValues',
+#                  'session':self.session,
+#                  'dropdown':dropdown}
+        params = {'session':self.session,
                   'dropdown':dropdown}
+
         if _id: params['id'] = _id
         if parent: params['parent'] = parent
         if name: params['name'] = name
@@ -505,8 +599,11 @@ class RESTClient:
                 params['start'] = count[0]
                 params['limit'] = count[1]
         if _help: params['help'] = _help
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.listDropdownValues(params)
+        return response
 
     def list_groups(self,mine=None,parent=None,under=None,withparent=None,filter=None,
                     count=None,_help=None):
@@ -536,8 +633,10 @@ class RESTClient:
         :param count: iterable containing start and limit integers
         :param _help: get usage information
         """
-        params = {'method':'glpi.listGroups',
-                  'session':self.session}
+#        params = {'method':'glpi.listGroups',
+#                  'session':self.session}
+        params = {'session':self.session}
+
         if mine: params['mine'] = mine
         if parent: params['parent'] = parent
         if under: params['under'] = under
@@ -550,8 +649,11 @@ class RESTClient:
                 params['start'] = count[0]
                 params['limit'] = count[1]
         if _help: params['help'] = _help
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.listGroups(params)
+        return response
 
     def list_helpdesk_items(self,itemtype,id2name=None,count=None,_help=None):
         """
@@ -571,8 +673,10 @@ class RESTClient:
         :param count: iterable containing start and limit integers
         :param _help: option to get usage information
         """
-        params = {'method':'glpi.listHelpdeskItems',
-                  'session':self.session,
+#        params = {'method':'glpi.listHelpdeskItems',
+#                  'session':self.session,
+#                  'itemtype':itemtype}
+        params = {'session':self.session,
                   'itemtype':itemtype}
 
         if id2name: params['id2name'] = id2name
@@ -584,8 +688,10 @@ class RESTClient:
                 params['limit'] = count[1]
         if _help: params['help'] = _help
 
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.listHelpdeskItems(params)
+        return response
 
     def list_helpdesk_types(self,count=None,_help=None):
         """
@@ -598,8 +704,10 @@ class RESTClient:
         :param _help: get usage information
         """
 
-        params = {'method':'glpi.listHelpdeskTypes',
-                  'session':self.session}
+#        params = {'method':'glpi.listHelpdeskTypes',
+#                  'session':self.session}
+        params = {'session':self.session}
+
         if count:
             if len(count) < 2:
                 raise Exception("List needs to include a start and limit integer")
@@ -608,8 +716,10 @@ class RESTClient:
                 params['limit'] = count[1]
         if _help: params['help'] = _help
 
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.glpi.listHelpdeskTypes(params)
+        return response
 
     def list_inventory_objects(self,count=None,_help=None):
         """
@@ -623,8 +733,10 @@ class RESTClient:
         :param count: list including start and limit
         :param _help: get usage information
         """
-        params = {'method':'glpi.listInventoryObjects',
-                  'session':self.session}
+#        params = {'method':'glpi.listInventoryObjects',
+#                  'session':self.session}
+        params = {'session':self.session}
+
         if count:
             if len(count) < 2:
                 raise Exception("List needs to include a start and limit integer")
@@ -632,8 +744,11 @@ class RESTClient:
                 params['start'] = count[0]
                 params['limit'] = count[1]
         if _help: params['help'] = _help
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.glpi.listInventoryObjects(params)
+        return response
 
     def list_objects(self, itemtype, location_name=None,
                      locations_id=None, name=None, otherserial=None,
@@ -669,9 +784,12 @@ class RESTClient:
 
         .. note:: link in itemtypes param is a of all GLPI classes, some are not retrievable through webservices.
         """
-        params = {'method':'glpi.listObjects',
-                  'session':self.session,
+#        params = {'method':'glpi.listObjects',
+#                  'session':self.session,
+#                  'itemtype':itemtype}
+        params = {'session':self.session,
                   'itemtype':itemtype}
+
         if location_name: params['location_name'] = location_name
         if locations_id: params['location_id'] = locations_id
         if name: params['name'] = name
@@ -688,8 +806,11 @@ class RESTClient:
                 params['start'] = count[0]
                 params['limit'] = count[1]
         if _help: params['help'] = _help
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.listObjects(params)
+        return response
 
     def list_tickets(self,mine=None,user=None, recipient=None,
                      group=None, mygroups=None, category=None,
@@ -774,8 +895,10 @@ class RESTClient:
         :param count: iterable including start and limit integers
         :param _help: get usage information
         """
-        params = {'method':'glpi.listTickets',
-                  'session':self.session}
+#        params = {'method':'glpi.listTickets',
+#                  'session':self.session}
+        params = {'session':self.session}
+
         if mine: params['mine'] = mine
         if user: params['user'] = user
         if recipient: params['recipient'] = recipient
@@ -800,8 +923,11 @@ class RESTClient:
                 params['start'] = count[0]
                 params['limit'] = count[1]
         if _help: params['help'] = _help
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.listTickets(params)
+        return response
 
     def list_users(self, user=None, group=None, location=None,
                    login=None, name=None, entity=None, parent=None,
@@ -838,8 +964,10 @@ class RESTClient:
         .. note:: order defaults to 'id'
         """
 
-        params = {'method':'glpi.listUsers',
-                  'session':self.session}
+#        params = {'method':'glpi.listUsers',
+#                  'session':self.session}
+        params = {'session':self.session}
+
         if user: params['user'] = user
         if group: params['group'] = group
         if location: params['location'] = location
@@ -856,8 +984,10 @@ class RESTClient:
                 params['limit'] = count[1]
         if _help: params['help'] = _help
 
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.listUsers(params)
+        return response
 
     """
     Action methods
@@ -868,8 +998,9 @@ class RESTClient:
                       urgency=None,_type=None,source=None,category=None,user_email=None,
                       user_email_notification=None,_help=None):
         """
-        Returns a JSON serialized version of a ticket upon
-        success. Unless otherwise noted, all params are optional
+#        Returns a JSON serialized version of a ticket upon
+#        success. Unless otherwise noted, all params are optional
+        Returns a hashtable of the modified ticket object (See L{GLPIClient.get_ticket}).
 
         :type entity: integer
         :type user: integer or list of integers
@@ -877,6 +1008,7 @@ class RESTClient:
         :type requester: integer or list of integers
         :type victim: integer or list of integers
         :type observer: integer or list of integers
+# groupassign ?
         :type date: ISO formatted date string
         :type itemtype: integer
         :type item: integer
@@ -895,6 +1027,7 @@ class RESTClient:
         :param requester: additional requester(s) with mail notification
         :param victim: same as requester, without mail notification
         :param observer: additional observers
+# groupassign ?
         :param date: defaults to system date
         :param itemtype: id of the type of the item, optional, default none
         :param item: ID of the item, optional, default none
@@ -909,16 +1042,21 @@ class RESTClient:
         :param _help: list available options in JSON
         """
 
-        params = {'method':'glpi.createTicket',
-                  'session':self.session,
+#        params = {'method':'glpi.createTicket',
+#                  'session':self.session,
+#                  'title':title,
+#                  'content':content}
+        params = {'session':self.session,
                   'title':title,
                   'content':content}
+
         if entity: params['entity'] = entity
         if user: params['user'] = user
         if group: params['group'] = group
         if requester: params['requester'] = requester
         if victim: params['victim'] = victim
         if observer: params['observer'] = observer
+# groupassign ?
         if date: params['date'] = date
         if itemtype: params['itemtype'] = itemtype
         if item: params['item'] = item
@@ -930,8 +1068,10 @@ class RESTClient:
         if user_email_notification: params['user_email_notification'] = user_email_notification
         if help: params['help'] = _help
 
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.createTicket(params)
+        return response
 
     def add_ticket_document(self, ticket, url=None, name=None,
                             base64=None, comment=None, content=None,
@@ -941,7 +1081,8 @@ class RESTClient:
         
         .. note:: base64 and url are mutually exclusive.
 
-        Returns the ticket if the call succeeds.	
+#        Returns the ticket if the call succeeds.	
+        Returns a hashtable of the modified ticket object (See L{GLPIClient.get_ticket}).
 
         :type ticket: integer
         :type url: string
@@ -960,17 +1101,23 @@ class RESTClient:
           `GLPIClient.add_ticket_followup`
         :param help: get usage information
         """
-        params = {'method':'glpi.createTicket',
-                  'session':self.session,
+#        params = {'method':'glpi.createTicket',
+#                  'session':self.session,
+#                  'ticket':ticket}
+        params = {'session':self.session,
                   'ticket':ticket}
+
         if url: params['url'] = url
         if name: params['name'] = name
         if base64: params['base64'] = base64
         if comment: params['comment'] = comment
         if content: params['content'] = content
         if _help: params['help'] = _help
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.addTicketDocument(params)
+        return response
 
     def add_ticket_followup(self, ticket, content, source=None,
                             private=None, reopen=None, close=None,
@@ -983,32 +1130,40 @@ class RESTClient:
 
         :type ticket: integer
         :type content: string
+# users_login ?
         :type source: string
         :type private: boolean
         :type reopen: boolean
         :type close: boolean
         :type _help: boolean
-
         :param ticket: ID of the ticket
         :param content: B{required} content of the new followup
+# users_login ?
         :param source: name of the RequestType (created if needed), defaults to 'WebServices'
         :param private: mark followup as private, defaults to 0
         :param reopen: set ticket to working state (deny solution for 'solved' ticket or answer for 'waiting' ticket)
         :param close: close a 'solved' ticket
         :param _help: get usage information
         """
-        params = {'method':'glpi.createTicket',
-                  'session':self.session,
+#        params = {'method':'glpi.createTicket',
+#                  'session':self.session,
+#                  'ticket':ticket,
+#                  'content':content}
+        params = {'session':self.session,
                   'ticket':ticket,
                   'content':content}
 
+# users_login ?
         if source: params['source'] = source
         if private: params['private'] = private
         if reopen: params['reopen'] = reopen
         if close: params['close'] = close
         if _help: params['help'] = _help
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.addTicketFollowup(params)
+        return response
 
     def add_ticket_observer(self, ticket, user=None, _help=None):
         """
@@ -1018,48 +1173,63 @@ class RESTClient:
 
         Other users can be added if allowed to update the ticket.
 
-        Returns a JSON serialized ticket upon success (as in
-        L{GLPIClient.get_ticket})
+#        Returns a JSON serialized ticket upon success (as in L{GLPIClient.get_ticket})
+        Returns a hashtable of the modified ticket object (See L{GLPIClient.get_ticket}).
 
         :type ticket: integer
         :type user: integer
+        :type _help: boolean
         :param ticket: ID of the ticket
         :param user: ID of the user
+        :param _help: get usage information
 
         """
-        params = {'method':'glpi.createTicket',
-                  'session':self.session,
+#        params = {'method':'glpi.createTicket',
+#                  'session':self.session,
+#                  'ticket':ticket}
+        params = {'session':self.session,
                   'ticket':ticket}
+
         if user: params['user'] = user
         if _help: params['help'] = _help
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.addTicketObserver(params)
+        return response
 
     def set_ticket_satisfaction(self, ticket, satisfaction,
                                 comment=None, _help=None):
         """
         Answer to the ticket satisfaction survey
 
-        Returns a JSON serialized ticket (See L{GLPIClient.get_ticket})
+#        Returns a JSON serialized ticket (See L{GLPIClient.get_ticket})
+        Returns a hashtable of the modified ticket object (See L{GLPIClient.get_ticket}).
 
         :type ticket: integer
         :type satisfaction: integer
         :type comment: string
         :type _help: boolean
-
         :param ticket: ID of ticket
         :param satisfaction: ID of the satisfaction answer, 0-5
         :param comment: optional comment
         :param _help: get usage information
         """
-        params = {'method':'glpi.createTicket',
-                  'session':self.session,
+#        params = {'method':'glpi.createTicket',
+#                  'session':self.session,
+#                  'ticket':ticket,
+#                  'satisfaction':satisfaction}
+        params = {'session':self.session,
                   'ticket':ticket,
                   'satisfaction':satisfaction}
+
         if comment: params['comment'] = comment
         if _help: params['help'] = _help
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.createTicket(params)
+        return response
 
     def set_ticket_validation(self, approval, status, comment=None,
                               _help=None):
@@ -1067,7 +1237,8 @@ class RESTClient:
         """
         Answer to the ticket approval request.
 
-        Returns a JSON serialized ticket upon success (See L{GLPIClient.get_ticket}).
+#        Returns a JSON serialized ticket upon success (See L{GLPIClient.get_ticket}).
+        Returns a hashtable of the modified ticket object (See L{GLPIClient.get_ticket}).
 
         :type approval: integer
         :type status: string
@@ -1081,14 +1252,27 @@ class RESTClient:
         :param comment: optional string, *required* if status is 'rejected'
         :param _help: get usage information
         """
-        params = {'method':'glpi.createTicket',
-                  'session':self.session,
+#        params = {'method':'glpi.createTicket',
+#                  'session':self.session,
+#                  'approval':approval,
+#                  'status':status}
+        params = {'session':self.session,
                   'approval':approval,
                   'status':status}
+
         if comment: params['comment'] = comment
         if _help: params['help'] = _help
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.createTicket(params)
+        return response
+
+# TODO :
+#    def set_ticket_solution
+
+# TODO :
+#    def set_ticket_assign
 
     def create_objects(self,fields,_help=None):
         """
@@ -1096,20 +1280,26 @@ class RESTClient:
 
         User must be super admin to run this method.
 
-        Returns a newly created JSON serialized object upon success.
+#        Returns a newly created JSON serialized object upon success.
+        Return a hashtable
 
         :type fields: list
         :type _help: boolean
         :param fields: inject data into GLPI
         :param _help: get usage information
         """
-        params = {'method':'glpi.createTicket',
-                  'session':self.session,
+#        params = {'method':'glpi.createTicket',
+#                  'session':self.session,
+#                  'fields':fields}
+        params = {'session':self.session,
                   'fields':fields}
+
         if _help: params['help'] = _help
 
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.createObjects(params)
+        return response
 
     def delete_objects(self,fields,_help=None):
         """
@@ -1118,14 +1308,24 @@ class RESTClient:
         User must be super admin to run this method.
 
         TODO: what does this thing return?
+
+        :type fields: list !Not the same array-structure as createObjects!
+        :type _help: boolean
+        :param fields: itemtype =>  Index VALUE => Delete/Purge
+        :param _help: get usage information
         """
-        params = {'method':'glpi.createTicket',
-                  'session':self.session,
+#        params = {'method':'glpi.createTicket',
+#                  'session':self.session,
+#                  'fields':fields}
+        params = {'session':self.session,
                   'fields':fields}
+
         if _help: params['help'] = _help
 
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.deleteObjects(params)
+        return response
 
     def update_objects(self,fields,_help=None):
         """
@@ -1135,14 +1335,23 @@ class RESTClient:
 
         TODO: What does this thing return?
 
+        :type fields: list - Same array-structure as createObjects
+        :type _help: boolean
+        :param fields: inject data into GLPI
+        :param _help: get usage information
         """
-        params = {'method':'glpi.createTicket',
-                  'session':self.session,
+#        params = {'method':'glpi.createTicket',
+#                  'session':self.session,
+#                  'fields':fields}
+        params = {'session':self.session,
                   'fields':fields}
+
         if _help: params['help'] = _help
 
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.updateObjects(params)
+        return response
 
     def link_objects(self,fields,_help):
         """
@@ -1151,11 +1360,22 @@ class RESTClient:
         User must be super admin to run this method.
 
         TODO: What does this thing return?
+
+        :type fields: array for link 2 objects in GLPI
+        :type _help: boolean
+        :param fields: arrays from_item, to_item
+        :param _help: get usage information
         """
-        params = {'method':'glpi.createTicket',
-                  'session':self.session,
+#        params = {'method':'glpi.createTicket',
+#                  'session':self.session,
+#                  'fields':fields}
+        params = {'session':self.session,
                   'fields':fields}
+
         if _help: params['help'] = _help
 
-        response = urllib2.urlopen(self.__request__(params))
-        return json.loads(response.read())
+#        response = urllib2.urlopen(self.__request__(params))
+#        return json.loads(response.read())
+        response = self.server.glpi.linkObjects(params)
+        return response
+
