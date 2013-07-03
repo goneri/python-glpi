@@ -13,16 +13,22 @@ class Client:
     automatically added to the GET request, which means the \
     webservices API will treat them as being true. You've been warned. """
 
-    BASEURL = "/glpi"
-    """ URL part that comes after the hostname '/glpi' is the default """
-    
-    def __init__(self):
+    def __init__(self, url=None):
+        """
+
+        Create a CLient instance
+
+        :type url: string
+        :param url: URL to the xmlrpc.php file (http://localhost/plugins/webservices/xmlrpc.php)
+        """
+        if url:
+            self.url=url
         pass
 
     def __request__(self,params):
-        return self.url + self.BASEURL + urllib.urlencode(params)
+        return self.url + urllib.urlencode(params)
 
-    def connect(self,host,login_name=None,login_password=None):
+    def connect(self,login_name=None,login_password=None):
         """
         
         Connect to a running GLPI instance that has the webservices
@@ -30,16 +36,11 @@ class Client:
         
         Returns True if connection was successful.
 
-        :type host: string
         :type login_name: string
         :type login_password: string
-        :param host: hostname of the GLPI server, has not been tested with HTTPS
         :param login_name: your GLPI username
         :param login_password: your GLPI password
         """
-
-#        self.url = 'http://' + host + self.BASEURL + '/plugins/webservices/rest.php?'
-        self.url = 'http://' + host + self.BASEURL + '/plugins/webservices/xmlrpc.php'
 
         self.login_name = None
         self.login_password = None
