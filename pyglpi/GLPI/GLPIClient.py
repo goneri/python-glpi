@@ -8,7 +8,7 @@ import pprint
 import sys, os, warnings
 import getpass
 
-class RESTClient:
+class Client:
     """.. note:: If any boolean arguments are defined, they're \
     automatically added to the GET request, which means the \
     webservices API will treat them as being true. You've been warned. """
