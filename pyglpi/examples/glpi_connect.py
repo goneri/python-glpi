@@ -3,13 +3,8 @@
 
 from GLPI import GLPIClient
 
-# Connection parameters
-host = 'glpitest.systea.fr'
-username = 'glpi'
-password = 'cela2G!'
-
 # Init the object
-glpi=GLPIClient.Client()
+glpi=GLPIClient.Client('http://localhost/plugins/webservices/xmlrpc.php')
 
 # Connect
 glpi.connect(host,username,password)

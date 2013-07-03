@@ -18,20 +18,8 @@ if __name__ == '__main__':
     import getpass
     import pprint
     
-    try:
-        host = os.environ['GLPI_SERVERNAME']
-        username = os.environ['GLPI_USERNAME']
-    except:
-        warnings.warn("GLPI environment variables not locally set", RuntimeWarning)
-        host = raw_input("Enter your GLPI hostname: ")
-        username = raw_input("Enter your GLPI username: ")
-
-    password = getpass.getpass("Enter your password: ")
-    glpi = GLPIClient.RESTClient()
-    # my servers are configured with the glpi root under VirtualHost
-    # configurations, BASEURL changed accordingly on next line.
-    glpi.BASEURL = ''
-    glpi.connect(host,username,password)
+    glpi = GLPIClient.Client('http://localhost/plugins/webservices/xmlrpc.php')
+    glpi.connect("glpi", "glpi")
     
     print "\nGetting Computer\n"
     pprint.pprint(glpi.get_computer(29))
