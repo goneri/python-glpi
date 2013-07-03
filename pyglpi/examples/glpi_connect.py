@@ -9,7 +9,7 @@ username = 'glpi'
 password = 'cela2G!'
 
 # Init the object
-glpi=GLPIClient.RESTClient()
+glpi=GLPIClient.Client()
 
 # Connect
 glpi.connect(host,username,password)
