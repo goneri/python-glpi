@@ -291,7 +291,8 @@ class Client:
         return response
 
     def get_object(self,itemtype,_id,show_label=None,
-                     show_name=None,_help=None):
+                     show_name=None,with_networkport=None,
+                     _help=None):
         """
         Returns an object from the GLPI server. itemtype can take `one of the following <https://forge.indepnet.net/embedded/glpi/annotated.html>`_
         
@@ -315,6 +316,7 @@ class Client:
         if _id: params['id'] = _id
         if show_label: params['show_label'] = show_label
         if show_name: params['show_name'] = show_name
+        if with_networkport: params['with_networkport'] = with_networkport
         if _help: params['help'] = _help
         print (params)
 
