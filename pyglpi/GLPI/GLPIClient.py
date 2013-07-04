@@ -23,7 +23,6 @@ class Client:
         """
         if url:
             self.url=url
-        pass
 
     def __request__(self,params):
         return self.url + urllib.urlencode(params)
