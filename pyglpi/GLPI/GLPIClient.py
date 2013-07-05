@@ -53,7 +53,10 @@ class Client:
 #                      'login_password':login_password,
 #                      'method':'glpi.doLogin'}
             params = {'login_name':login_name,
-                      'login_password':login_password}
+                      'username':login_name,
+                      'login_password':login_password,
+                      'password':login_password
+                     }
 
 #            request = urllib2.Request(self.url + urllib.urlencode(params))
 #            response = urllib2.urlopen(request).read()
